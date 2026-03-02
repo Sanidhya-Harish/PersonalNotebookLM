@@ -1,0 +1,14 @@
+# Python
+backend/venv/
+__pycache__/
+*.pyc
+
+# Node
+notebook-ui/node_modules/
+notebook-ui/.next/
+
+# OS
+.DS_Store
+
+# Environment
+.env

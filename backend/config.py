@@ -1,0 +1,6 @@
+import os
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")

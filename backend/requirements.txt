@@ -1,0 +1,13 @@
+fastapi 
+uvicorn 
+groq 
+supabase 
+pypdf 
+beautifulsoup4 
+requests 
+python-pptx 
+faiss-cpu 
+sentence-transformers 
+python-multipart
+edge-tts
+elevenlabs
