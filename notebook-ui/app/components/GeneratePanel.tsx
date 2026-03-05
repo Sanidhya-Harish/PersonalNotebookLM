@@ -6,44 +6,51 @@ interface GeneratePanelProps {
   activeNotebook: string
 }
 
+interface PodcastResult {
+  audio_file?: string
+  warning?: string
+}
+
 export default function GeneratePanel({
   activeNotebook,
 }: GeneratePanelProps) {
   const [loading, setLoading] = useState<"podcast" | "slides" | null>(null)
-  const [result, setResult] = useState<string | null>(null)
+  const [podcastResult, setPodcastResult] = useState<PodcastResult | null>(null)
+  const [slidesFile, setSlidesFile] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [duration, setDuration] = useState("short")
 
+  const API = process.env.NEXT_PUBLIC_API_URL
+
   const generate = async (type: "podcast" | "slides") => {
+    if (!activeNotebook) return
+
     setLoading(type)
-    setResult(null)
+    setError(null)
+    setPodcastResult(null)
+    setSlidesFile(null)
 
-    let url = ""
-
-    if (type === "podcast") {
-      url = `http://localhost:8000/podcast/?notebook_id=${activeNotebook}&duration=${duration}`
-    } else {
-      url = `http://localhost:8000/generate-slides/?notebook_id=${activeNotebook}`
-    }
+    const url =
+      type === "podcast"
+        ? `${API}/podcast/?notebook_id=${activeNotebook}&duration=${duration}`
+        : `${API}/generate-slides/?notebook_id=${activeNotebook}`
 
     try {
-      const response = await fetch(url, {
-        method: "POST",
-      })
-
+      const response = await fetch(url, { method: "POST" })
       const data = await response.json()
 
       if (!response.ok) {
-        setResult("Generation failed.")
+        setError("Generation failed.")
       } else {
         if (type === "podcast") {
-          setResult(data.script || "Podcast generated.")
+          setPodcastResult(data)
         } else {
-          setResult(`Slides generated at: ${data.file}`)
+          setSlidesFile(data.file)
         }
       }
-    } catch (error) {
-      console.error(error)
-      setResult("Something went wrong.")
+    } catch (err) {
+      console.error(err)
+      setError("Something went wrong.")
     }
 
     setLoading(null)
@@ -51,8 +58,8 @@ export default function GeneratePanel({
 
   return (
     <div className="bg-neutral-900 text-white p-6 rounded-2xl">
-      <h3 className="text-lg font-medium mb-4">
-        Generate
+      <h3 className="text-lg font-semibold mb-4">
+        Generate Content
       </h3>
 
       <p className="text-sm text-neutral-400 mb-4">
@@ -93,9 +100,57 @@ export default function GeneratePanel({
         </button>
       </div>
 
-      {result && (
-        <div className="mt-6 bg-neutral-800 p-4 rounded-xl text-sm whitespace-pre-wrap">
-          {result}
+      {/* ERROR */}
+      {error && (
+        <div className="mt-6 bg-red-900 p-4 rounded-xl text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* PODCAST RESULT */}
+      {podcastResult?.audio_file && (
+        <div className="mt-6 bg-neutral-800 p-5 rounded-xl space-y-4">
+          <h4 className="font-semibold text-lg">
+            🎙 Podcast Ready
+          </h4>
+
+          <audio controls className="w-full">
+            <source
+              src={`${API}/${podcastResult.audio_file}`}
+              type="audio/mpeg"
+            />
+          </audio>
+
+          <a
+            href={`${API}/${podcastResult.audio_file}`}
+            download
+            className="inline-block bg-white text-black px-4 py-2 rounded-xl"
+          >
+            Download Podcast
+          </a>
+
+          {podcastResult.warning && (
+            <p className="text-yellow-400 text-sm">
+              {podcastResult.warning}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* SLIDES RESULT */}
+      {slidesFile && (
+        <div className="mt-6 bg-neutral-800 p-5 rounded-xl">
+          <h4 className="font-semibold text-lg mb-3">
+            📊 Slides Ready
+          </h4>
+
+          <a
+            href={`${API}/${slidesFile}`}
+            target="_blank"
+            className="inline-block bg-white text-black px-4 py-2 rounded-xl"
+          >
+            Download Slides
+          </a>
         </div>
       )}
     </div>

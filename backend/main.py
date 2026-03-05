@@ -8,6 +8,7 @@ from fastapi import Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fastapi import HTTPException
+from fastapi.staticfiles import StaticFiles
 
 #STORAGE
 import os
@@ -24,6 +25,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve storage folder publicly
+app.mount("/storage", StaticFiles(directory="storage"), name="storage")
 
 @app.get("/")
 def home():
@@ -77,7 +81,7 @@ async def podcast(
     script = script.replace(":", "")
 
     try:
-        audio = await text_to_audio(script)
+        audio = await text_to_audio(script, notebook_id)
     except Exception as e:
         return {
             "notebook": notebook_id,
@@ -103,7 +107,7 @@ async def generate_slides(notebook_id: str = Query(...)):
         return {"error": "No documents found in this notebook."}
 
     # Pass correct arguments to create_slides
-    file_path = create_slides(f"{notebook_id}_presentation", slide_data["slides"])
+    file_path = create_slides(notebook_id, slide_data["slides"])
 
     return {
         "notebook": notebook_id,
@@ -163,6 +167,17 @@ async def delete_notebook(notebook_id: str = Query(...)):
     if not os.path.exists(notebook_path):
         raise HTTPException(status_code=404, detail="Notebook not found")
 
+    # 1️⃣ Delete notebook folder (sources)
     shutil.rmtree(notebook_path)
 
-    return {"message": "Notebook deleted"}
+    # 2️⃣ Delete podcast file if exists
+    podcast_file = os.path.join("storage", f"{notebook_id}_podcast.mp3")
+    if os.path.exists(podcast_file):
+        os.remove(podcast_file)
+
+    # 3️⃣ Delete slides file if exists
+    slides_file = os.path.join("storage", f"{notebook_id}_slides.pptx")
+    if os.path.exists(slides_file):
+        os.remove(slides_file)
+
+    return {"message": "Notebook and all associated files deleted"}
